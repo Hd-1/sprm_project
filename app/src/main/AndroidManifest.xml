@@ -8,12 +8,14 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SPRM_Project">
-        <activity android:name="profileController.EditProfile"></activity>
+        android:theme="@style/Theme.SPRM_Project"
+        android:usesCleartextTraffic="true">
+        <activity android:name="ui.AddTravelActivity"></activity>
+        <activity android:name="profileController.EditProfile" />
         <activity
             android:name="ui.MainActivity"
             android:label="@string/app_name"
-            android:theme="@style/Theme.SPRM_Project.NoActionBar"/>
+            android:theme="@style/Theme.SPRM_Project.NoActionBar" />
         <activity android:name="ui.SignInActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
