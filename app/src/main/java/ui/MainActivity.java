@@ -8,10 +8,12 @@ import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -24,20 +26,18 @@ import com.google.android.material.navigation.NavigationView;
 
 import java.util.Objects;
 
+import fragment.mainPage.MainPageFragment;
+import fragment.messages.MessagesFragment;
+import fragment.notifications.NotificationsFragment;
 import profileController.Profile;
 
 public class MainActivity extends AppCompatActivity{
 
-    MainActivityViewModel viewModel;
+    private MainActivityViewModel viewModel;
+    private NavController navController;
+    private AppBarConfiguration mAppBarConfiguration;
 
-    NavController navController;
-    AppBarConfiguration mAppBarConfiguration;
-    DrawerLayout drawerLayout;
-    NavigationView navigationDrawer;
-    BottomNavigationView bottomNavigationView;
-    Toolbar toolbar;
-
-    TextView drawername, drawerfollows, drawersubs;
+    private TextView drawername, drawerfollows, drawersubs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,24 +49,18 @@ public class MainActivity extends AppCompatActivity{
 
         checkIfSignedIn();
 
-        initViews();
-        setupNavigation();
-
-    }
-
-    private void initViews() {
-        drawerLayout = findViewById(R.id.drawer_layout);
-        navigationDrawer = findViewById(R.id.nav_view);
-        bottomNavigationView = findViewById(R.id.bottom_nav);
-        toolbar = findViewById(R.id.toolbar);
+        //Init Navigation Components
+        DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
+        NavigationView navigationDrawer = findViewById(R.id.nav_view);
         View headerView = navigationDrawer.getHeaderView(0);
-        drawername = findViewById(R.id.drawername);
-        drawerfollows = findViewById(R.id.drawerfollows);
-        drawersubs = findViewById(R.id.drawersubs);
-    }
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_nav);
+        Toolbar toolbar = findViewById(R.id.toolbar);
 
+        drawername = headerView.findViewById(R.id.drawername);
+        drawerfollows = headerView.findViewById(R.id.drawerfollows);
+        drawersubs = headerView.findViewById(R.id.drawersubs);
 
-    private void setupNavigation() {
+        //Setup Navigation Components
         navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         setSupportActionBar(toolbar);
         Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
@@ -74,45 +68,42 @@ public class MainActivity extends AppCompatActivity{
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.bottomnav_notifications, R.id.bottomnav_mainpage, R.id.bottomnav_notifications,
                 R.id.nav_profile, R.id.nav_travels, R.id.nav_documentation,
                 R.id.nav_tips, R.id.nav_jobs, R.id.nav_settings)
                 .setOpenableLayout(drawerLayout)
                 .build();
-        setBottomNavigationVisibility();
 
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
-        NavigationUI.setupWithNavController(bottomNavigationView, navController);
         NavigationUI.setupWithNavController(navigationDrawer, navController);
-        setBottomNavigationVisibility();
+
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.nav_open, R.string.nav_close);
+        drawerLayout.addDrawerListener(toggle);
+        toggle.syncState();
     }
 
-    private void setBottomNavigationVisibility() {
-        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
-                switch (destination.getId()){
-                    default:
-                        bottomNavigationView.setVisibility(View.GONE);
+    private final BottomNavigationView.OnNavigationItemSelectedListener bottomnavListener =
+            item -> {
+                Fragment selectedF = null;
+
+                switch (item.getItemId()){
+                    case R.id.bottomnav_mainpage :
+                        selectedF = new MainPageFragment();
                         break;
-                    case R.id.bottomnav_mainpage:
-                    case R.id.bottomnav_messages:
-                        bottomNavigationView.setVisibility(View.VISIBLE);
-                    case R.id.bottomnav_notifications:
-                        bottomNavigationView.setVisibility(View.VISIBLE);
+                    case R.id.bottomnav_notifications :
+                        selectedF = new NotificationsFragment();
+                        break;
+                    case R.id.bottomnav_messages :
+                        selectedF = new MessagesFragment();
+                        break;
                 }
-        });
-    }
+
+                getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, selectedF).commit();
+                return true;
+    };
 
     @Override
     public boolean onSupportNavigateUp() {
         return NavigationUI.navigateUp(navController, mAppBarConfiguration) || super.onSupportNavigateUp();
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START))
-            drawerLayout.closeDrawer(GravityCompat.START);
-        else
-            super.onBackPressed();
     }
 
     @Override
@@ -131,7 +122,7 @@ public class MainActivity extends AppCompatActivity{
     private void checkIfSignedIn() {
         viewModel.getCurrentUser().observe(this, user -> {
             if (user != null) {
-                //drawername.setText(user.getDisplayName());
+                drawername.setText(user.getDisplayName());
             } else
                 startLoginActivity();
         });
